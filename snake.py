@@ -21,9 +21,24 @@ DOWN = (0, 1)
 LEFT = (-1, 0)
 RIGHT = (1, 0)
 
+# Food class
+class Food:
+    def __init__(self):
+        self.position = (0, 0)
+        self.image = pygame.image.load("apple.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (GRID_SIZE, GRID_SIZE))
+        self.randomize_position()
+
+    def randomize_position(self):
+        self.position = (random.randint(0, (WIDTH//GRID_SIZE)-1) * GRID_SIZE,
+                         random.randint(0, (HEIGHT//GRID_SIZE)-1) * GRID_SIZE)
+
+    def render(self, surface):
+        surface.blit(self.image, self.position)
+
 # Snake class
 class Snake:
-    def __init__(self):
+    def __init__(self, food):
         self.length = 1
         self.positions = [((WIDTH // 2), (HEIGHT // 2))]
         self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
@@ -50,6 +65,8 @@ class Snake:
         self.body_image = pygame.Surface((GRID_SIZE, GRID_SIZE))
         self.body_image.fill(WHITE)
         self.tail_position = self.positions[-1]  # Initialize tail position at the end of the snake
+        self.score = 0  # Initialize score
+        self.food = food  # Reference to the food object
 
     def get_head_position(self):
         return self.positions[0]
@@ -64,6 +81,12 @@ class Snake:
             self.positions.insert(0, new)
             if len(self.positions) > self.length:
                 self.tail_position = self.positions.pop()
+        
+        # Update score when snake eats food
+        if self.get_head_position() == self.food.position:
+            self.score += 1
+            self.length += 1
+            self.food.randomize_position()
 
     def reset(self):
         self.length = 1
@@ -107,21 +130,6 @@ class Snake:
         else:
             return self.direction
 
-# Food class
-class Food:
-    def __init__(self):
-        self.position = (0, 0)
-        self.image = pygame.image.load("apple.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (GRID_SIZE, GRID_SIZE))
-        self.randomize_position()
-
-    def randomize_position(self):
-        self.position = (random.randint(0, (WIDTH//GRID_SIZE)-1) * GRID_SIZE,
-                         random.randint(0, (HEIGHT//GRID_SIZE)-1) * GRID_SIZE)
-
-    def render(self, surface):
-        surface.blit(self.image, self.position)
-
 # Main function
 def main():
     clock = pygame.time.Clock()
@@ -129,8 +137,8 @@ def main():
     surface = pygame.Surface(screen.get_size())
     surface = surface.convert()
 
-    snake = Snake()
-    food = Food()
+    food = Food()  # Instantiate food object
+    snake = Snake(food)  # Pass food object to Snake class
 
     while True:
         for event in pygame.event.get():
@@ -149,14 +157,15 @@ def main():
 
         snake.update()
 
-        # Check for collisions with food
-        if snake.get_head_position() == food.position:
-            snake.length += 1
-            food.randomize_position()
-
         surface.fill(BLACK)
         snake.render(surface)
         food.render(surface)
+        
+        # Display score on the screen
+        font = pygame.font.SysFont("arial", 24)
+        score_text = font.render(f"Score: {snake.score}", True, WHITE)
+        surface.blit(score_text, (10, 10))
+        
         screen.blit(surface, (0, 0))
         pygame.display.update()
         clock.tick(FPS)
