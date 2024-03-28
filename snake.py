@@ -6,11 +6,13 @@ import random
 pygame.init()
 
 # Constants
-WIDTH, HEIGHT = 600, 400
+WIDTH, HEIGHT = 400, 400  # Changed to 400x400
 GRID_SIZE = 20
 FPS = 10
 
 # Colors
+LIGHT_BROWN = (205, 133, 63)  # Light brown color for the land
+DARK_BROWN = (139, 69, 19)   # Dark brown color for the wall
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
@@ -21,20 +23,9 @@ DOWN = (0, 1)
 LEFT = (-1, 0)
 RIGHT = (1, 0)
 
-# Food class
-class Food:
-    def __init__(self):
-        self.position = (0, 0)
-        self.image = pygame.image.load("apple.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (GRID_SIZE, GRID_SIZE))
-        self.randomize_position()
-
-    def randomize_position(self):
-        self.position = (random.randint(0, (WIDTH//GRID_SIZE)-1) * GRID_SIZE,
-                         random.randint(0, (HEIGHT//GRID_SIZE)-1) * GRID_SIZE)
-
-    def render(self, surface):
-        surface.blit(self.image, self.position)
+# Game States
+RUNNING = 0
+GAME_OVER = 1
 
 # Snake class
 class Snake:
@@ -64,53 +55,67 @@ class Snake:
         }
         self.body_image = pygame.Surface((GRID_SIZE, GRID_SIZE))
         self.body_image.fill(WHITE)
-        self.tail_position = self.positions[-1]  # Initialize tail position at the end of the snake
-        self.score = 0  # Initialize score
-        self.food = food  # Reference to the food object
+        self.tail_position = self.positions[-1]
+        self.food = food
+        self.score = 0
+        self.state = RUNNING  # Initialize game state
 
     def get_head_position(self):
         return self.positions[0]
 
     def update(self):
-        cur = self.get_head_position()
-        x, y = self.direction
-        new = (((cur[0] + (x*GRID_SIZE)) % WIDTH), (cur[1] + (y*GRID_SIZE)) % HEIGHT)
-        if len(self.positions) > 2 and new in self.positions[2:]:
-            self.reset()
-        else:
-            self.positions.insert(0, new)
-            if len(self.positions) > self.length:
-                self.tail_position = self.positions.pop()
-        
-        # Update score when snake eats food
-        if self.get_head_position() == self.food.position:
-            self.score += 1
-            self.length += 1
-            self.food.randomize_position()
+        if self.state == RUNNING:
+            cur = self.get_head_position()
+            x, y = self.direction
+            new = (((cur[0] + (x*GRID_SIZE)) % WIDTH), (cur[1] + (y*GRID_SIZE)) % HEIGHT)
+
+            # Check for collisions with food
+            if new == self.food.position:
+                self.length += 1
+                self.score += 10
+                self.food.randomize_position(self)
+            else:
+                if len(self.positions) > 2 and new in self.positions[2:]:
+                    self.state = GAME_OVER  # Change game state to GAME_OVER
+                else:
+                    self.positions.insert(0, new)
+                    if len(self.positions) > self.length:
+                        self.tail_position = self.positions.pop()
+
+            # Check for collisions with wall
+            if new[0] < GRID_SIZE or new[0] >= WIDTH or new[1] < GRID_SIZE or new[1] >= HEIGHT:
+                self.state = GAME_OVER  # Change game state to GAME_OVER
 
     def reset(self):
         self.length = 1
         self.positions = [((WIDTH // 2), (HEIGHT // 2))]
         self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
-        self.tail_position = self.positions[-1]  # Reset tail position
+        self.tail_position = self.positions[-1]
+        self.score = 0
+        self.state = RUNNING  # Reset game state
 
     def render(self, surface):
+        pygame.draw.rect(surface, DARK_BROWN, [0, 0, WIDTH, GRID_SIZE])  # Top wall
+        pygame.draw.rect(surface, DARK_BROWN, [0, 0, GRID_SIZE, HEIGHT])  # Left wall
+        pygame.draw.rect(surface, DARK_BROWN, [0, HEIGHT - GRID_SIZE, WIDTH, GRID_SIZE])  # Bottom wall
+        pygame.draw.rect(surface, DARK_BROWN, [WIDTH - GRID_SIZE, 0, GRID_SIZE, HEIGHT])  # Right wall
+        
         head_image = self.head_images[self.direction]
         surface.blit(head_image, self.positions[0])
         for i, p in enumerate(self.positions[1:]):
             prev = self.positions[i]
             next = self.positions[i + 2] if i < len(self.positions) - 2 else self.positions[-1]
-            if prev[1] == next[1]:  # Horizontal body segment
+            if prev[1] == next[1]:
                 body_image = self.body_images[(LEFT, RIGHT)]
-            elif prev[0] == next[0]:  # Vertical body segment
+            elif prev[0] == next[0]:
                 body_image = self.body_images[(UP, DOWN)]
-            elif (prev[0] - p[0] == -GRID_SIZE and next[1] - p[1] == -GRID_SIZE) or (next[0] - p[0] == -GRID_SIZE and prev[1] - p[1] == -GRID_SIZE):  # Top-left corner
+            elif (prev[0] - p[0] == -GRID_SIZE and next[1] - p[1] == -GRID_SIZE) or (next[0] - p[0] == -GRID_SIZE and prev[1] - p[1] == -GRID_SIZE):
                 body_image = self.body_images[(UP, LEFT)]
-            elif (prev[0] - p[0] == GRID_SIZE and next[1] - p[1] == -GRID_SIZE) or (next[0] - p[0] == GRID_SIZE and prev[1] - p[1] == -GRID_SIZE):  # Top-right corner
+            elif (prev[0] - p[0] == GRID_SIZE and next[1] - p[1] == -GRID_SIZE) or (next[0] - p[0] == GRID_SIZE and prev[1] - p[1] == -GRID_SIZE):
                 body_image = self.body_images[(UP, RIGHT)]
-            elif (prev[0] - p[0] == -GRID_SIZE and next[1] - p[1] == GRID_SIZE) or (next[0] - p[0] == -GRID_SIZE and prev[1] - p[1] == GRID_SIZE):  # Bottom-left corner
+            elif (prev[0] - p[0] == -GRID_SIZE and next[1] - p[1] == GRID_SIZE) or (next[0] - p[0] == -GRID_SIZE and prev[1] - p[1] == GRID_SIZE):
                 body_image = self.body_images[(DOWN, LEFT)]
-            elif (prev[0] - p[0] == GRID_SIZE and next[1] - p[1] == GRID_SIZE) or (next[0] - p[0] == GRID_SIZE and prev[1] - p[1] == GRID_SIZE):  # Bottom-right corner
+            elif (prev[0] - p[0] == GRID_SIZE and next[1] - p[1] == GRID_SIZE) or (next[0] - p[0] == GRID_SIZE and prev[1] - p[1] == GRID_SIZE):
                 body_image = self.body_images[(DOWN, RIGHT)]
             surface.blit(body_image, p)
         tail_image = self.tail_images[self.get_tail_direction()]
@@ -130,6 +135,46 @@ class Snake:
         else:
             return self.direction
 
+# Food class
+class Food:
+    def __init__(self, snake):
+        self.position = (0, 0)
+        self.image = pygame.image.load("apple.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (GRID_SIZE, GRID_SIZE))
+        self.randomize_position(snake)
+
+    def randomize_position(self, snake):
+        valid_positions = [(x, y) for x in range(GRID_SIZE, WIDTH - GRID_SIZE, GRID_SIZE)
+                           for y in range(GRID_SIZE, HEIGHT - GRID_SIZE, GRID_SIZE)
+                           if (x, y) not in snake.positions]
+        self.position = random.choice(valid_positions)
+
+    def render(self, surface):
+        surface.blit(self.image, self.position)
+
+# Button class
+class Button:
+    def __init__(self, x, y, width, height, text):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.color = RED
+        self.text = text
+
+    def draw(self, surface, outline=None):
+        if outline:
+            pygame.draw.rect(surface, outline, self.rect, 0)
+        
+        pygame.draw.rect(surface, self.color, self.rect, 0)
+
+        if self.text != "":
+            font = pygame.font.SysFont("Arial", 20)
+            text = font.render(self.text, True, BLACK)
+            surface.blit(text, (self.rect.x + (self.rect.width // 2 - text.get_width() // 2),
+                                self.rect.y + (self.rect.height // 2 - text.get_height() // 2)))
+
+    def is_over(self, pos):
+        # Pos is the mouse position or a tuple of (x, y) coordinates
+        return self.rect.collidepoint(pos)
+
 # Main function
 def main():
     clock = pygame.time.Clock()
@@ -137,8 +182,11 @@ def main():
     surface = pygame.Surface(screen.get_size())
     surface = surface.convert()
 
-    food = Food()  # Instantiate food object
-    snake = Snake(food)  # Pass food object to Snake class
+    snake = Snake(None)  # Initialize snake object first
+    food = Food(snake)  # Initialize food object with snake object
+    snake.food = food  # Assign food object to snake
+
+    play_again_button = Button(150, 350, 100, 50, "Play Again")  # Define play_again_button here
 
     while True:
         for event in pygame.event.get():
@@ -146,26 +194,39 @@ def main():
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
+                if event.key == pygame.K_UP and snake.direction != DOWN:
                     snake.direction = UP
-                elif event.key == pygame.K_DOWN:
+                elif event.key == pygame.K_DOWN and snake.direction != UP:
                     snake.direction = DOWN
-                elif event.key == pygame.K_LEFT:
+                elif event.key == pygame.K_LEFT and snake.direction != RIGHT:
                     snake.direction = LEFT
-                elif event.key == pygame.K_RIGHT:
+                elif event.key == pygame.K_RIGHT and snake.direction != LEFT:
                     snake.direction = RIGHT
 
         snake.update()
 
-        surface.fill(BLACK)
+        surface.fill(LIGHT_BROWN)  # Fill background with light brown color
         snake.render(surface)
         food.render(surface)
         
-        # Display score on the screen
-        font = pygame.font.SysFont("arial", 24)
-        score_text = font.render(f"Score: {snake.score}", True, WHITE)
+        # Display score
+        font = pygame.font.SysFont("Arial", 20)
+        score_text = font.render(f"Score: {snake.score}", True, BLACK)
         surface.blit(score_text, (10, 10))
-        
+
+        if snake.state == GAME_OVER:
+            font = pygame.font.SysFont("Arial", 30)
+            game_over_text = font.render("Game Over", True, BLACK)
+            surface.blit(game_over_text, (WIDTH // 2 - game_over_text.get_width() // 2, HEIGHT // 2 - game_over_text.get_height() // 2))
+            play_again_button.draw(surface, BLACK)  # Draw play_again_button below game_over_text
+
+            # Check if play again button is clicked
+            mouse_pos = pygame.mouse.get_pos()
+            if play_again_button.is_over(mouse_pos):
+                play_again_button.color = (255, 0, 0)  # Change button color when hovered
+                if pygame.mouse.get_pressed()[0]:
+                    snake.reset()
+
         screen.blit(surface, (0, 0))
         pygame.display.update()
         clock.tick(FPS)
