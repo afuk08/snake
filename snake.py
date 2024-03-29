@@ -72,12 +72,18 @@ class Snake:
 
             if new == self.food.position:
                 if self.score % 5 == 0 and self.score != 0:
-                    self.food.randomize_position(self)
+                    self.food.randomize_position()
                     self.score += 2
                 else:
                     self.length += 1
                     self.score += 1
-                    self.food.randomize_position(self)
+                    self.food.randomize_position()
+            
+            # Check for Bapple collision
+            elif new == self.bapple.position:
+                self.score -= 5  # Deduct 5 points
+                self.bapple.randomize_position(self)
+                
             else:
                 if len(self.positions) > 2 and new in self.positions[2:]:
                     self.state = GAME_OVER
@@ -146,12 +152,13 @@ class Food:
         self.super_image = pygame.image.load("Sapple.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (GRID_SIZE, GRID_SIZE))
         self.super_image = pygame.transform.scale(self.super_image, (GRID_SIZE, GRID_SIZE))
-        self.randomize_position(snake)
+        self.snake = snake  # Store the snake instance
+        self.randomize_position()
 
-    def randomize_position(self, snake):
+    def randomize_position(self):
         valid_positions = [(x, y) for x in range(GRID_SIZE, WIDTH - GRID_SIZE, GRID_SIZE)
                            for y in range(GRID_SIZE, HEIGHT - GRID_SIZE, GRID_SIZE)
-                           if (x, y) not in snake.positions]
+                           if (x, y) not in self.snake.positions]
         self.position = random.choice(valid_positions)
 
     def render(self, surface, snake):
@@ -212,11 +219,12 @@ def main():
     surface = surface.convert()
 
     snake = Snake(None)
-    food = Food(snake)
+    food = Food(snake)  # Pass snake instance to Food
     bapple = Bapple(snake)  # Initialize Bapple
-    snake.food = food
+    snake.food = food  # Assign food instance to snake
+    snake.bapple = bapple  # Assign bapple instance to snake
 
-    play_again_button = Button(150, 350, 100, 50, "Play Again")
+    play_again_button = Button(150, 350, 100, 50, "Play Again")  # Define play_again_button
 
     while True:
         for event in pygame.event.get():
