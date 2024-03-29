@@ -71,12 +71,16 @@ class Snake:
 
             # Check for collisions with food
             if new == self.food.position:
-                self.length += 1
-                self.score += 1
-                self.food.randomize_position(self)
+                if self.score % 5 == 0 and self.score != 0:  # Check if score is a multiple of 5
+                    self.food.randomize_position(self) 
+                    self.score += 2
+                else:
+                    self.length += 1
+                    self.score += 1
+                    self.food.randomize_position(self)
             else:
                 if len(self.positions) > 2 and new in self.positions[2:]:
-                    self.state = GAME_OVER  # Change game state to GAME_OVER
+                    self.state = GAME_OVER
                 else:
                     self.positions.insert(0, new)
                     if len(self.positions) > self.length:
@@ -84,8 +88,7 @@ class Snake:
 
             # Check for collisions with wall
             if new[0] < GRID_SIZE or new[0] >= WIDTH - GRID_SIZE or new[1] < GRID_SIZE or new[1] >= HEIGHT - GRID_SIZE:
-                self.state = GAME_OVER  # Change game state to GAME_OVER
-
+                self.state = GAME_OVER
 
     def reset(self):
         self.length = 1
@@ -93,7 +96,7 @@ class Snake:
         self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
         self.tail_position = self.positions[-1]
         self.score = 0
-        self.state = RUNNING  # Reset game state
+        self.state = RUNNING
 
     def render(self, surface):
         pygame.draw.rect(surface, DARK_BROWN, [0, 0, WIDTH, GRID_SIZE])  # Top wall
@@ -136,12 +139,13 @@ class Snake:
         else:
             return self.direction
 
-# Food class
 class Food:
     def __init__(self, snake):
         self.position = (0, 0)
         self.image = pygame.image.load("apple.png").convert_alpha()
+        self.super_image = pygame.image.load("Sapple.png").convert_alpha()  # Super apple image
         self.image = pygame.transform.scale(self.image, (GRID_SIZE, GRID_SIZE))
+        self.super_image = pygame.transform.scale(self.super_image, (GRID_SIZE, GRID_SIZE))  # Super apple size
         self.randomize_position(snake)
 
     def randomize_position(self, snake):
@@ -150,8 +154,11 @@ class Food:
                            if (x, y) not in snake.positions]
         self.position = random.choice(valid_positions)
 
-    def render(self, surface):
-        surface.blit(self.image, self.position)
+    def render(self, surface, snake):
+        if snake.score % 10 == 0 and snake.score > 0:  # Check for super apple condition
+            surface.blit(self.super_image, self.position)
+        else:
+            surface.blit(self.image, self.position)
 
 # Button class
 class Button:
@@ -173,7 +180,6 @@ class Button:
                                 self.rect.y + (self.rect.height // 2 - text.get_height() // 2)))
 
     def is_over(self, pos):
-        # Pos is the mouse position or a tuple of (x, y) coordinates
         return self.rect.collidepoint(pos)
 
 # Main function
@@ -183,18 +189,18 @@ def main():
     surface = pygame.Surface(screen.get_size())
     surface = surface.convert()
 
-    snake = Snake(None)  # Initialize snake object first
-    food = Food(snake)  # Initialize food object with snake object
-    snake.food = food  # Assign food object to snake
+    snake = Snake(None)
+    food = Food(snake)
+    snake.food = food
 
-    play_again_button = Button(150, 350, 100, 50, "Play Again")  # Define play_again_button here
+    play_again_button = Button(150, 350, 100, 50, "Play Again")
 
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.KEYDOWN and snake.state == RUNNING:  # Check game state here
+            elif event.type == pygame.KEYDOWN and snake.state == RUNNING:
                 if event.key == pygame.K_UP and snake.direction != DOWN:
                     snake.direction = UP
                 elif event.key == pygame.K_DOWN and snake.direction != UP:
@@ -204,14 +210,12 @@ def main():
                 elif event.key == pygame.K_RIGHT and snake.direction != LEFT:
                     snake.direction = RIGHT
 
-
         snake.update()
 
-        surface.fill(LIGHT_BROWN)  # Fill background with light brown color
+        surface.fill(LIGHT_BROWN)
         snake.render(surface)
-        food.render(surface)
+        food.render(surface, snake)
         
-        # Display score
         font = pygame.font.SysFont("Arial", 20)
         score_text = font.render(f"Score: {snake.score}", True, BLACK)
         surface.blit(score_text, (10, 10))
@@ -220,12 +224,11 @@ def main():
             font = pygame.font.SysFont("Arial", 30)
             game_over_text = font.render("Game Over", True, BLACK)
             surface.blit(game_over_text, (WIDTH // 2 - game_over_text.get_width() // 2, HEIGHT // 2 - game_over_text.get_height() // 2))
-            play_again_button.draw(surface, BLACK)  # Draw play_again_button below game_over_text
+            play_again_button.draw(surface, BLACK)
 
-            # Check if play again button is clicked
             mouse_pos = pygame.mouse.get_pos()
             if play_again_button.is_over(mouse_pos):
-                play_again_button.color = (255, 0, 0)  # Change button color when hovered
+                play_again_button.color = (255, 69, 0)
                 if pygame.mouse.get_pressed()[0]:
                     snake.reset()
 
