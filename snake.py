@@ -194,7 +194,7 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN and snake.state == RUNNING:  # Check game state here
                 if event.key == pygame.K_UP and snake.direction != DOWN:
                     snake.direction = UP
                 elif event.key == pygame.K_DOWN and snake.direction != UP:
@@ -203,6 +203,7 @@ def main():
                     snake.direction = LEFT
                 elif event.key == pygame.K_RIGHT and snake.direction != LEFT:
                     snake.direction = RIGHT
+
 
         snake.update()
 
