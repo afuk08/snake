@@ -83,8 +83,9 @@ class Snake:
                         self.tail_position = self.positions.pop()
 
             # Check for collisions with wall
-            if new[0] < GRID_SIZE or new[0] >= WIDTH or new[1] < GRID_SIZE or new[1] >= HEIGHT:
+            if new[0] < GRID_SIZE or new[0] >= WIDTH - GRID_SIZE or new[1] < GRID_SIZE or new[1] >= HEIGHT - GRID_SIZE:
                 self.state = GAME_OVER  # Change game state to GAME_OVER
+
 
     def reset(self):
         self.length = 1
