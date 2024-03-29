@@ -72,7 +72,7 @@ class Snake:
             # Check for collisions with food
             if new == self.food.position:
                 self.length += 1
-                self.score += 10
+                self.score += 1
                 self.food.randomize_position(self)
             else:
                 if len(self.positions) > 2 and new in self.positions[2:]:
