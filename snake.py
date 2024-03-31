@@ -219,12 +219,12 @@ def main():
     surface = surface.convert()
 
     snake = Snake(None)
-    food = Food(snake)  # Pass snake instance to Food
-    bapple = Bapple(snake)  # Initialize Bapple
-    snake.food = food  # Assign food instance to snake
-    snake.bapple = bapple  # Assign bapple instance to snake
+    food = Food(snake)
+    bapple = Bapple(snake)
+    snake.food = food
+    snake.bapple = bapple
 
-    play_again_button = Button(150, 350, 100, 50, "Play Again")  # Define play_again_button
+    play_again_button = Button(150, 350, 100, 50, "Play Again") 
 
     while True:
         for event in pygame.event.get():
