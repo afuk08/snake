@@ -3,28 +3,27 @@ import sys
 import random
 import time
 
-# Initialize Pygame
 pygame.init()
 
-# Constants
+# Screen dimensions and grid size
 WIDTH, HEIGHT = 400, 400
 GRID_SIZE = 20
 FPS = 10
 
-# Colors
+# Color constants
 LIGHT_BROWN = (205, 133, 63)
 DARK_BROWN = (139, 69, 19)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 
-# Directions
+# Directional constants
 UP = (0, -1)
 DOWN = (0, 1)
 LEFT = (-1, 0)
 RIGHT = (1, 0)
 
-# Game States
+# Game state constants
 RUNNING = 0
 GAME_OVER = 1
 
@@ -34,18 +33,21 @@ class Snake:
         self.length = 1
         self.positions = [((WIDTH // 2), (HEIGHT // 2))]
         self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
+        # Snake head images for different directions
         self.head_images = {
             UP: pygame.transform.scale(pygame.image.load("head_up.png").convert_alpha(), (GRID_SIZE, GRID_SIZE)),
             DOWN: pygame.transform.scale(pygame.image.load("head_down.png").convert_alpha(), (GRID_SIZE, GRID_SIZE)),
             LEFT: pygame.transform.scale(pygame.image.load("head_left.png").convert_alpha(), (GRID_SIZE, GRID_SIZE)),
             RIGHT: pygame.transform.scale(pygame.image.load("head_right.png").convert_alpha(), (GRID_SIZE, GRID_SIZE))
         }
+        # Snake tail images for different directions
         self.tail_images = {
             DOWN: pygame.transform.scale(pygame.image.load("tail_up.png").convert_alpha(), (GRID_SIZE, GRID_SIZE)),
             UP: pygame.transform.scale(pygame.image.load("tail_down.png").convert_alpha(), (GRID_SIZE, GRID_SIZE)),
             RIGHT: pygame.transform.scale(pygame.image.load("tail_left.png").convert_alpha(), (GRID_SIZE, GRID_SIZE)),
             LEFT: pygame.transform.scale(pygame.image.load("tail_right.png").convert_alpha(), (GRID_SIZE, GRID_SIZE))
         }
+        # Snake body images for different orientations
         self.body_images = {
             (UP, DOWN): pygame.transform.scale(pygame.image.load("body_vertical.png").convert_alpha(), (GRID_SIZE, GRID_SIZE)),
             (LEFT, RIGHT): pygame.transform.scale(pygame.image.load("body_horizontal.png").convert_alpha(), (GRID_SIZE, GRID_SIZE)),
@@ -61,29 +63,30 @@ class Snake:
         self.score = 0
         self.state = RUNNING
 
+    # Get the position of the snake's head
     def get_head_position(self):
         return self.positions[0]
 
+    # Update the snake's position and check for collisions
     def update(self):
         if self.state == RUNNING:
             cur = self.get_head_position()
             x, y = self.direction
             new = (((cur[0] + (x*GRID_SIZE)) % WIDTH), (cur[1] + (y*GRID_SIZE)) % HEIGHT)
 
+            # Check for food collision
             if new == self.food.position:
-                if self.score % 5 == 0 and self.score != 0:
+                if self.score % 10 == 0 and self.score != 0:
                     self.food.randomize_position()
-                    self.score += 2
+                    self.score +=3
                 else:
                     self.length += 1
                     self.score += 1
                     self.food.randomize_position()
-            
-            # Check for Bapple collision and game state
+            # Check for Bapple collision
             elif new == self.bapple.position and self.state == RUNNING:
-                self.score -= 5  # Deduct 5 points
+                self.score -= 5
                 self.bapple.randomize_position(self)
-                
             else:
                 if len(self.positions) > 2 and new in self.positions[2:]:
                     self.state = GAME_OVER
@@ -92,9 +95,11 @@ class Snake:
                     if len(self.positions) > self.length:
                         self.tail_position = self.positions.pop()
 
+            # Check for wall collision
             if new[0] < GRID_SIZE or new[0] >= WIDTH - GRID_SIZE or new[1] < GRID_SIZE or new[1] >= HEIGHT - GRID_SIZE:
                 self.state = GAME_OVER
 
+    # Reset the snake's attributes to start a new game
     def reset(self):
         self.length = 1
         self.positions = [((WIDTH // 2), (HEIGHT // 2))]
@@ -103,6 +108,7 @@ class Snake:
         self.score = 0
         self.state = RUNNING
 
+    # Render the snake on the game surface
     def render(self, surface):
         pygame.draw.rect(surface, DARK_BROWN, [0, 0, WIDTH, GRID_SIZE])
         pygame.draw.rect(surface, DARK_BROWN, [0, 0, GRID_SIZE, HEIGHT])
@@ -130,6 +136,7 @@ class Snake:
         tail_image = self.tail_images[self.get_tail_direction()]
         surface.blit(tail_image, self.tail_position)
 
+    # Determine the direction of the snake's tail
     def get_tail_direction(self):
         tail_x, tail_y = self.tail_position
         prev_tail_x, prev_tail_y = self.positions[-2] if len(self.positions) > 1 else self.positions[-1]
@@ -152,15 +159,17 @@ class Food:
         self.super_image = pygame.image.load("Sapple.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (GRID_SIZE, GRID_SIZE))
         self.super_image = pygame.transform.scale(self.super_image, (GRID_SIZE, GRID_SIZE))
-        self.snake = snake  # Store the snake instance
+        self.snake = snake
         self.randomize_position()
 
+    # Randomize the position of the food on the game grid
     def randomize_position(self):
         valid_positions = [(x, y) for x in range(GRID_SIZE, WIDTH - GRID_SIZE, GRID_SIZE)
                            for y in range(GRID_SIZE, HEIGHT - GRID_SIZE, GRID_SIZE)
                            if (x, y) not in self.snake.positions]
         self.position = random.choice(valid_positions)
 
+    # Render the food on the game surface
     def render(self, surface, snake):
         if snake.score % 10 == 0 and snake.score > 0:
             surface.blit(self.super_image, self.position)
@@ -176,14 +185,16 @@ class Bapple:
         self.spawn_time = time.time()
         self.randomize_position(snake)
 
+    # Randomize the position of the Bapple on the game grid
     def randomize_position(self, snake):
-        if snake.state == RUNNING:  # Check the game state
+        if snake.state == RUNNING:
             valid_positions = [(x, y) for x in range(GRID_SIZE, WIDTH - GRID_SIZE, GRID_SIZE)
                                for y in range(GRID_SIZE, HEIGHT - GRID_SIZE, GRID_SIZE)
                                if (x, y) not in snake.positions]
             self.position = random.choice(valid_positions)
             self.spawn_time = time.time()
 
+    # Render the Bapple on the game surface
     def render(self, surface, snake):
         surface.blit(self.image, self.position)
         
@@ -197,6 +208,7 @@ class Button:
         self.color = RED
         self.text = text
 
+    # Draw the button on the game surface
     def draw(self, surface, outline=None):
         if outline:
             pygame.draw.rect(surface, outline, self.rect, 0)
@@ -209,6 +221,7 @@ class Button:
             surface.blit(text, (self.rect.x + (self.rect.width // 2 - text.get_width() // 2),
                                 self.rect.y + (self.rect.height // 2 - text.get_height() // 2)))
 
+    # Check if the mouse is over the button
     def is_over(self, pos):
         return self.rect.collidepoint(pos)
 
@@ -247,7 +260,7 @@ def main():
         surface.fill(LIGHT_BROWN)
         snake.render(surface)
         food.render(surface, snake)
-        bapple.render(surface, snake)  # Render Bapple
+        bapple.render(surface, snake)
         
         font = pygame.font.SysFont("Arial", 20)
         score_text = font.render(f"Score: {snake.score}", True, BLACK)
