@@ -79,8 +79,8 @@ class Snake:
                     self.score += 1
                     self.food.randomize_position()
             
-            # Check for Bapple collision
-            elif new == self.bapple.position:
+            # Check for Bapple collision and game state
+            elif new == self.bapple.position and self.state == RUNNING:
                 self.score -= 5  # Deduct 5 points
                 self.bapple.randomize_position(self)
                 
@@ -177,11 +177,12 @@ class Bapple:
         self.randomize_position(snake)
 
     def randomize_position(self, snake):
-        valid_positions = [(x, y) for x in range(GRID_SIZE, WIDTH - GRID_SIZE, GRID_SIZE)
-                           for y in range(GRID_SIZE, HEIGHT - GRID_SIZE, GRID_SIZE)
-                           if (x, y) not in snake.positions]
-        self.position = random.choice(valid_positions)
-        self.spawn_time = time.time()
+        if snake.state == RUNNING:  # Check the game state
+            valid_positions = [(x, y) for x in range(GRID_SIZE, WIDTH - GRID_SIZE, GRID_SIZE)
+                               for y in range(GRID_SIZE, HEIGHT - GRID_SIZE, GRID_SIZE)
+                               if (x, y) not in snake.positions]
+            self.position = random.choice(valid_positions)
+            self.spawn_time = time.time()
 
     def render(self, surface, snake):
         surface.blit(self.image, self.position)
